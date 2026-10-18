@@ -125,8 +125,7 @@ enum Pipeline {
         do {
             let t1 = Date()
             // Thinking OFF: the CLI turns extended thinking on by default, which made this call
-            // take 16–64 s instead of ~2.5 s (2026-09-29 A/B on the same prompt, see
-            // docs/tasks/2026-09-25-slow-transcription-diagnosis.md).
+            // take 16–64 s instead of ~2.5 s (A/B on the same prompt).
             // The cleanup rules are the SYSTEM prompt and every tool is off: with Claude Code's own agent
             // prompt in place, a dictation that was itself a request ("check the PDF in my Downloads")
             // got answered instead of cleaned, 5 of 5 replays (2026-10-11). The transcript is the whole

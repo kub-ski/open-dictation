@@ -10,10 +10,11 @@ I want to install Open Dictation on this Mac: a free app that types what I say, 
 3. Ask me these three questions, one at a time, and wait for each answer:
    a) What should the app be called? (default: OpenDictation)
    b) What language do I speak? (default: auto-detect; or a code like en, pl, de, es, fr)
-   c) Which key do I hold to talk? (default: Fn; or right-option, right-command, right-control)
+   c) Which key do I hold to talk? (default: Fn; or right-option, right-command, right-control, left-control)
 4. Run ./setup.sh with my answers, for example:
    ./setup.sh --name "MyName" --language en --hotkey fn --yes
    If it stops, read the message, fix the cause, and run it again. It is safe to repeat.
+   If it says Homebrew is missing, tell me in plain words to open Terminal, paste the one-line command from https://brew.sh and type my Mac password when it asks (you cannot type it for me), and wait until I say "done". Then run setup again.
 5. Then walk me through the macOS permission screens ONE AT A TIME, and wait for me to say "done" after each:
    - If my key is Fn: System Settings > Keyboard > "Press 🌐 key to" > Do Nothing.
    - Allow the Microphone when macOS asks.
@@ -22,7 +23,7 @@ I want to install Open Dictation on this Mac: a free app that types what I say, 
    Tell me exactly where to click. Open each Settings page for me with the `open` command.
 6. Quit and reopen the app once, open TextEdit, and ask me to hold my key and say a sentence. Confirm the text appeared.
 
-Use plain words. I am not technical. Do not ask me to run commands: you run them. Do not change anything outside the steps above.
+Use plain words. I am not technical. Do not ask me to run commands: you run them (the Homebrew password step is the one exception). Do not change anything outside the steps above.
 ```
 
 If you use another agent, change nothing: the same prompt works. Prefer to do it by hand? See [README.md](README.md).

@@ -11,7 +11,7 @@
 set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-NAME=""; LANGUAGE=""; HOTKEY=""; MODEL="small"; YES=0; LAUNCH=1; TESTHOOKS=false
+NAME=""; LANGUAGE=""; HOTKEY=""; MODEL=""; YES=0; LAUNCH=1; TESTHOOKS=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --name) NAME="$2"; shift 2 ;;
@@ -32,8 +32,8 @@ slugify() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9'; }
 
 [ "$(uname -s)" = Darwin ] || die "this only runs on a Mac."
 [ "$(uname -m)" = arm64 ] || die "this needs an Apple Silicon Mac (M1 or newer)."
-MAJOR="$(sw_vers -productVersion | cut -d. -f1)"
-[ "$MAJOR" -ge 14 ] || die "this needs macOS 14 (Sonoma) or newer. You have $(sw_vers -productVersion)."
+OSV="$(sw_vers -productVersion)"; MAJOR="${OSV%%.*}"; MINOR="$(printf '%s' "$OSV" | cut -d. -f2)"; MINOR="${MINOR:-0}"
+if [ "$MAJOR" -lt 14 ] || { [ "$MAJOR" -eq 14 ] && [ "$MINOR" -lt 2 ]; }; then die "this needs macOS 14.2 (Sonoma) or newer. You have $OSV."; fi
 
 # ---- 1. the three questions ----------------------------------------------------------------
 ask() { # ask "<question>" "<default>" -> prints the answer
@@ -48,9 +48,9 @@ cfg_get() { [ -f "$OLD_CFG" ] && /usr/bin/python3 -c "import json,sys;print(json
 say "Open Dictation setup"
 [ -n "$NAME" ]     || NAME="$(ask "1/3  What should your app be called?" "OpenDictation")" 
 OLD_CFG="$HOME/.$(slugify "$NAME")/config.json"
-[ -n "$LANGUAGE" ] || LANGUAGE="$(ask "2/3  Language you speak (auto = detect it, or en, pl, de, es, fr…)?" "$(cfg_get language || true)")"
+if [ -z "$LANGUAGE" ]; then D="$(cfg_get language || true)"; LANGUAGE="$(ask "2/3  Language you speak (auto = detect it, or en, pl, de, es, fr…)?" "${D:-auto}")"; fi
 [ -n "$LANGUAGE" ] || LANGUAGE="auto"
-[ -n "$HOTKEY" ]   || HOTKEY="$(ask "3/3  Hotkey (fn, right-option, right-command, right-control)?" "$(cfg_get hotkey || true)")"
+if [ -z "$HOTKEY" ]; then D="$(cfg_get hotkey || true)"; HOTKEY="$(ask "3/3  Hotkey (fn, right-option, right-command, right-control, left-control)?" "${D:-fn}")"; fi
 [ -n "$HOTKEY" ]   || HOTKEY="fn"
 
 case "$NAME" in *[!A-Za-z0-9\ -]*|"") die "the name can only use letters, numbers, spaces and dashes." ;; esac
@@ -59,6 +59,12 @@ LANGUAGE="$(printf '%s' "$LANGUAGE" | tr '[:upper:]' '[:lower:]')"
 case "$LANGUAGE" in *[!a-z-]*|"") die "language must be a code like auto, en or pl." ;; esac
 case "$HOTKEY" in fn|right-option|right-command|right-control|left-control) ;; *) die "hotkey must be fn, right-option, right-command, right-control or left-control." ;; esac
 PACK=en; [ "$LANGUAGE" = pl ] && PACK=pl
+# Running setup again keeps what you set before (model, test URLs, AI polish) unless you pass a flag.
+if [ -z "$MODEL" ]; then
+  OLD_MODEL="$(cfg_get model || true)"
+  case "$OLD_MODEL" in ggml-base.bin) MODEL=base ;; ggml-medium.bin) MODEL=medium ;; ggml-large-v3-turbo.bin) MODEL=large-v3-turbo ;; *) MODEL=small ;; esac
+fi
+if [ -z "$TESTHOOKS" ]; then TESTHOOKS="$(cfg_get testHooks || true)"; case "$TESTHOOKS" in True|true) TESTHOOKS=true ;; *) TESTHOOKS=false ;; esac; fi
 
 case "$MODEL" in
   base) MODEL_FILE=ggml-base.bin;  MODEL_SIZE="about 140 MB" ;;
@@ -83,7 +89,7 @@ if ! command -v brew >/dev/null 2>&1; then
   for b in /opt/homebrew/bin/brew /usr/local/bin/brew; do [ -x "$b" ] && eval "$("$b" shellenv)" && break; done
 fi
 if ! command -v brew >/dev/null 2>&1; then
-  [ -t 0 ] || die "Homebrew is missing. Install it from https://brew.sh, then run ./setup.sh again."
+  [ -t 0 ] || die "Homebrew is missing, and installing it needs your Mac password in Terminal. Open Terminal, paste the one-line command from https://brew.sh, enter your password when asked, then run ./setup.sh again."
   echo "Installing Homebrew (it will ask for your Mac password)…"
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   eval "$(/opt/homebrew/bin/brew shellenv)"
@@ -165,12 +171,13 @@ CNF
 fi
 # codesign finds identities through the keychain search list: make sure ours is on it
 if ! security list-keychains -d user | grep -q "$SLUG-signing"; then
-  security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+  CUR=(); while IFS= read -r l; do l="${l#*\"}"; l="${l%\"*}"; [ -n "$l" ] && CUR+=("$l"); done < <(security list-keychains -d user)
+  security list-keychains -d user -s "$KC" "${CUR[@]}"
 fi
 
 # ---- 6. build and install ------------------------------------------------------------------
 say "Building $NAME (the first build takes a minute or two)"
-pkill -x "$NAME" 2>/dev/null || true
+pkill -f "$HOME/Applications/$NAME.app/Contents/MacOS/" 2>/dev/null || true   # only our own copy
 "$REPO/build.sh" "$NAME"
 "$HOME/Applications/$NAME.app/Contents/MacOS/$NAME" --check | tail -1
 

@@ -17,8 +17,9 @@ Already use Claude Code (or a similar coding agent)? Paste the prompt from [PROM
 ## What you need
 
 - A Mac with Apple Silicon (M1 or newer)
-- macOS 14 (Sonoma) or newer
+- macOS 14.2 (Sonoma) or newer
 - About 1 GB of free space
+- Homebrew. If you do not have it, setup will say so: paste the one-line command from [brew.sh](https://brew.sh) into Terminal (it asks for your Mac password), then run `./setup.sh` again.
 - Optional: the [`claude` CLI](https://docs.claude.com/en/docs/claude-code) signed in. If you have it, the app can also polish your text. If you don't, everything still works.
 
 ## Install in 5 steps
@@ -36,7 +37,9 @@ Already use Claude Code (or a similar coding agent)? Paste the prompt from [PROM
 4. Answer 3 questions: the **name** of your app, your **language** (`auto` finds it for you), and your **hotkey** (`fn` is the default). Press Enter to accept a default.
 5. Wait. The first run installs the tools, downloads a speech model (about 470 MB), and builds the app. When it ends, the app opens and a microphone icon shows in your menu bar.
 
-Setup is safe to run again. It skips what is already done. Run it again any time you want a new name, language or hotkey.
+Setup is safe to run again. It skips what is already done. Run it again any time you want a new name, language or hotkey. It keeps your other settings (model, AI polish).
+
+To remove an app: `./uninstall.sh "<YourName>"`.
 
 Prefer no questions? `./setup.sh --name "Whisperer" --language auto --hotkey fn --yes`
 

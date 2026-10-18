@@ -9,7 +9,7 @@ pkill -f "$HOME/Applications/$NAME.app/Contents/MacOS/" 2>/dev/null || true
 if [ -d "$HOME/Applications/$NAME.app" ]; then rm -rf "$HOME/Applications/$NAME.app"; echo "removed ~/Applications/$NAME.app"; fi
 if [ -f "$KC" ]; then
   CUR=(); while IFS= read -r l; do l="${l#*\"}"; l="${l%\"*}"; [ -n "$l" ] && [ "$l" != "$KC" ] && CUR+=("$l"); done < <(security list-keychains -d user)
-  security list-keychains -d user -s "${CUR[@]}"
+  security list-keychains -d user -s ${CUR[@]+"${CUR[@]}"}
   security delete-keychain "$KC" 2>/dev/null || true
   echo "removed signing keychain"
 fi

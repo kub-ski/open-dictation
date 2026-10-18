@@ -172,7 +172,7 @@ fi
 # codesign finds identities through the keychain search list: make sure ours is on it
 if ! security list-keychains -d user | grep -q "$SLUG-signing"; then
   CUR=(); while IFS= read -r l; do l="${l#*\"}"; l="${l%\"*}"; [ -n "$l" ] && CUR+=("$l"); done < <(security list-keychains -d user)
-  security list-keychains -d user -s "$KC" "${CUR[@]}"
+  security list-keychains -d user -s "$KC" ${CUR[@]+"${CUR[@]}"}
 fi
 
 # ---- 6. build and install ------------------------------------------------------------------

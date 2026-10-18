@@ -23,6 +23,8 @@ I want to install Open Dictation on this Mac: a free app that types what I say, 
    Tell me exactly where to click. Open each Settings page for me with the `open` command.
 6. Quit and reopen the app once, open TextEdit, and ask me to hold my key and say a sentence. Confirm the text appeared.
 
+Never use sudo and never type my password for me. For the Xcode tools pop-up and for a Homebrew ownership (chown) message, explain the step to me in plain words and wait until I say "done".
+
 Use plain words. I am not technical. Do not ask me to run commands: you run them (the Homebrew password step is the one exception). Do not change anything outside the steps above.
 ```
 

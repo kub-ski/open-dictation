@@ -14,6 +14,8 @@ enum SelfCheck {
                LocalCleanup.clean("um so this is uh a test", pack: en), "So this is a test")
         expect("en: spoken commands",
                LocalCleanup.clean("hello comma world period new line second line", pack: en), "Hello, world.\nSecond line")
+        expect("en: Whisper's own punctuation after a spoken command is not doubled",
+               LocalCleanup.clean("hello comma, this is a test period.", pack: en), "Hello, this is a test.")
         expect("en: 'period of time' left alone",
                LocalCleanup.clean("it was a period of time", pack: en), "It was a period of time")
         expect("pl: Polish fillers and commands",

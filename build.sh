@@ -24,7 +24,7 @@ SCRATCH="$HOME/.$SLUG/build"
 APP="$HOME/Applications/$NAME.app"
 
 echo "build: compiling (release)…"
-swift build -c release --package-path "$REPO" --scratch-path "$SCRATCH"
+swift build -c release -Xswiftc -suppress-warnings --package-path "$REPO" --scratch-path "$SCRATCH"
 BIN="$(swift build -c release --package-path "$REPO" --scratch-path "$SCRATCH" --show-bin-path)/OpenDictation"
 [ -f "$BIN" ] || { echo "build: binary not found at $BIN" >&2; exit 1; }
 

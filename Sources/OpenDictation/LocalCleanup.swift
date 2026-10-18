@@ -21,7 +21,8 @@ enum LocalCleanup {
         for (pattern, rep) in pack.commands {
             // "period" is also an ordinary noun ("a period of time"), so a spoken full stop only counts at the
             // end of the text or right before a line break; the other commands fire anywhere they stand alone.
-            let after = rep == "." ? "(?=\\s*$|\\s*\\n)" : "(?=[\\s.,!?]|$)"
+            // Whisper often adds its own punctuation after the spoken word ("period." / "comma,"); swallow one mark.
+            let after = rep == "." ? "[.,!?]?(?=\\s*$|\\s*\\n)" : "[.,!?;:]?(?=[\\s.,!?]|$)"
             s = replace(s, pattern: "(?i)(?<=\\s)(\(pattern))\(after)", with: NSRegularExpression.escapedTemplate(for: rep))
         }
 

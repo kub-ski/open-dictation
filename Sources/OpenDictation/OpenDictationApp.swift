@@ -2,12 +2,11 @@ import SwiftUI
 
 @main
 struct OpenDictationApp: App {
-    @StateObject private var state: AppState
+    @StateObject private var state = AppState()
 
     init() {
         // `OpenDictation --check` runs the built-in self-check (no UI) and exits.
         if CommandLine.arguments.contains("--check") { exit(SelfCheck.run()) }
-        _state = StateObject(wrappedValue: AppState())
     }
 
     var body: some Scene {

@@ -23,6 +23,17 @@ enum Pipeline {
     /// Whisper's classic hallucinations on silence/noise live in the language pack.
     private static var pack: LanguagePack { LanguagePack.named(AppConfig.current.pack) }
 
+    /// The environment for child processes. If the app was started from inside Claude Code (for example by an
+    /// agent running `open`), it inherits CLAUDECODE / CLAUDE_CODE_* variables, and a `claude` child then thinks it is a
+    /// nested session and reports "not logged in". Drop them so `claude` behaves as it does in a normal Terminal.
+    private static func childEnvironment() -> [String: String] {
+        var env = ProcessInfo.processInfo.environment.filter { k, _ in
+            !(k.hasPrefix("CLAUDE") || k == "AI_AGENT" || k == "AGENT" || k == "AGENT_VOICE")
+        }
+        env["PATH"] = toolPath
+        return env
+    }
+
     /// Is the user's own `claude` CLI installed and signed in? Checked once, then cached.
     /// (`claude auth status` prints JSON with "loggedIn": true. Any failure means "no" and
     /// the app simply uses the local cleanup.)
@@ -30,16 +41,20 @@ enum Pipeline {
         let p = Process()
         p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         p.arguments = ["claude", "auth", "status"]
-        var env = ProcessInfo.processInfo.environment; env["PATH"] = toolPath
+        let env = childEnvironment()
         p.environment = env
-        let out = Pipe(); p.standardOutput = out; p.standardError = Pipe(); p.standardInput = Pipe()
-        guard (try? p.run()) != nil else { return false }
+        let out = Pipe(), errPipe = Pipe(); p.standardOutput = out; p.standardError = errPipe; p.standardInput = Pipe()
+        do { try p.run() } catch { Log.write("claude: cannot start (\(error.localizedDescription))"); return false }
         let kill = DispatchWorkItem { if p.isRunning { p.terminate() } }
         DispatchQueue.global().asyncAfter(deadline: .now() + 15, execute: kill)
         let data = out.fileHandleForReading.readDataToEndOfFile()
         p.waitUntilExit(); kill.cancel()
         guard p.terminationStatus == 0,
-              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return false }
+              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            let e = String(decoding: errPipe.fileHandleForReading.readDataToEndOfFile().prefix(300), as: UTF8.self)
+            Log.write("claude: 'auth status' exit \(p.terminationStatus), stderr: \(e), env keys: \(env.keys.sorted().joined(separator: ","))")
+            return false
+        }
         return (obj["loggedIn"] as? Bool) == true
     }()
 
@@ -60,7 +75,7 @@ enum Pipeline {
         let t0 = Date()
 
         // 1) ffmpeg → 16 kHz mono wav + measure loudness in the same pass
-        let wavURL = audioURL.deletingPathExtension().appendingPathExtension("wav")
+        let wavURL = audioURL.deletingPathExtension().appendingPathExtension("16k.wav")   // never the input's own name (a .wav input would be overwritten)
         defer { try? FileManager.default.removeItem(at: wavURL) }
         let ffOut = try await run("ffmpeg", ["ffmpeg", "-y", "-i", audioURL.path,
                                              "-af", "volumedetect",
@@ -191,9 +206,7 @@ enum Pipeline {
             p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
             p.arguments = argv
             if let cwd { p.currentDirectoryURL = cwd }
-            var env = ProcessInfo.processInfo.environment
-            env["PATH"] = toolPath
-            p.environment = env
+            p.environment = childEnvironment()
 
             let out = Pipe(), err = Pipe(), inPipe = Pipe()
             p.standardOutput = out

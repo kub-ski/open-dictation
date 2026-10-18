@@ -281,6 +281,12 @@ final class URLCommands: NSObject {
     static let shared = URLCommands()
     var handler: ((URL) -> Void)?
     func install() {
+        register()
+        // SwiftUI installs its own URL handler while the app finishes launching; register again afterwards so ours wins.
+        NotificationCenter.default.addObserver(forName: NSApplication.didFinishLaunchingNotification, object: nil, queue: .main) { [weak self] _ in self?.register() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in self?.register() }
+    }
+    private func register() {
         NSAppleEventManager.shared().setEventHandler(self, andSelector: #selector(handleGetURL(_:reply:)),
                                                      forEventClass: AEEventClass(kInternetEventClass), andEventID: AEEventID(kAEGetURL))
     }

@@ -29,4 +29,9 @@ enum Log {
             }
         }
     }
+
+    /// The log quotes dictations, so "Clear history" clears it too.
+    static func clear() {
+        q.async { try? FileManager.default.removeItem(at: url) }
+    }
 }

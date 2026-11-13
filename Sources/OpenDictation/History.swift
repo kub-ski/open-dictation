@@ -36,6 +36,8 @@ final class HistoryStore: ObservableObject {
     func clear() {
         entries = []
         persist()
+        Log.clear()
+        Log.write("history: cleared (and the log)")
     }
 
     private func persist() {

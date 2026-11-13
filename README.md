@@ -116,7 +116,7 @@ The model loads into memory the first time. After that it is faster.
 If it says `/opt/homebrew is not writable`, run the `sudo chown` line it prints, then `./setup.sh` again.
 
 **Where is the log?**
-`~/.<yourname>/logs/app.log`. Every step writes a line with its timing.
+`~/.<yourname>/logs/app.log`. Every step writes a line with its timing. It quotes your dictations, so **Clear history** clears it too.
 
 **Leftover audio.**
 A normal recording deletes itself. Leftovers from a crash are removed after 24 hours.
@@ -131,7 +131,7 @@ It runs the cleanup rules and the settings reader, prints PASS or FAIL for each,
 
 ## Privacy
 
-Audio and text stay on your Mac. The only network use is the one-time model download and Homebrew. If you turn on AI polish, the text of each dictation goes to Claude through your own `claude` login, the same as any message you send there.
+Audio and text stay on your Mac, in `~/.<yourname>`, which only your Mac account can open. The only network use is the one-time model download and Homebrew. If you turn on AI polish, the text of each dictation goes to Claude through your own `claude` login, the same as any message you send there.
 
 ## License and credit
 

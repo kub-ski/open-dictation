@@ -110,6 +110,7 @@ echo "ok"
 # ---- 3. model ------------------------------------------------------------------------------
 say "Speech model ($MODEL_FILE, $MODEL_SIZE)"
 mkdir -p "$SUPPORT/models"
+chmod 700 "$SUPPORT"   # your history and logs: other accounts on this Mac can read the rest of your home folder
 DEST="$SUPPORT/models/$MODEL_FILE"
 if [ -s "$DEST" ] && [ "$(stat -f%z "$DEST")" -gt 100000000 ]; then
   echo "already downloaded: $DEST"

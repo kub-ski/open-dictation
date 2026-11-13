@@ -17,8 +17,9 @@ final class AppState: ObservableObject {
     @Published var phase: Phase = .idle {
         didSet { syncHUD() }
     }
-    // AI polish runs through the user's own `claude` CLI (a few seconds slower). Default follows config:
-    // "auto" = on when claude is installed and signed in; "off" = never.
+    // AI polish runs through the user's own `claude` CLI (a few seconds slower) and sends each dictation's text
+    // to Anthropic, so it is opt-in. Default follows config: "auto" = offered in the menu, off until ticked;
+    // "on" = on when claude is installed and signed in; "off" = never.
     @Published var cleanupEnabled = false
     @Published var claudeAvailable = false
     @Published var permissionsOK = false
@@ -56,7 +57,7 @@ final class AppState: ObservableObject {
                 let ok = Pipeline.claudeReady
                 DispatchQueue.main.async {
                     self?.claudeAvailable = ok
-                    self?.cleanupEnabled = ok && AppConfig.current.aiPolish != "off"
+                    self?.cleanupEnabled = ok && AppConfig.current.aiPolish == "on"
                     Log.write("app: claude CLI ready = \(ok); AI polish \(self?.cleanupEnabled == true ? "on" : "off")")
                 }
             }

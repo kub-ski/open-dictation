@@ -16,7 +16,8 @@ struct AppConfig {
     var pack = "en"
     /// "fn", "right-option", "right-command", "right-control" or "left-control".
     var hotkey = "fn"
-    /// "auto" = use the `claude` CLI when it is installed and signed in, "on" = always try, "off" = never.
+    /// "auto" = offer the `claude` CLI polish in the menu, off until the user ticks it (it sends the text to
+    /// Anthropic), "on" = use it whenever claude is installed and signed in, "off" = never.
     var aiPolish = "auto"
     /// Test URLs (<app>://selftest, dictate-file, …). Off, so a web page cannot trigger them.
     var testHooks = false

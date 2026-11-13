@@ -75,7 +75,9 @@ enum Pipeline {
         let t0 = Date()
 
         // 1) ffmpeg → 16 kHz mono wav + measure loudness in the same pass
-        let wavURL = audioURL.deletingPathExtension().appendingPathExtension("16k.wav")   // never the input's own name (a .wav input would be overwritten)
+        // In our own work folder, never next to the input: ffmpeg -y would overwrite (and the defer delete) a file
+        // there, and dictate-file inputs can sit anywhere.
+        let wavURL = workDir.appendingPathComponent("\(UUID().uuidString).16k.wav")
         defer { try? FileManager.default.removeItem(at: wavURL) }
         let ffOut = try await run("ffmpeg", ["ffmpeg", "-y", "-i", audioURL.path,
                                              "-af", "volumedetect",

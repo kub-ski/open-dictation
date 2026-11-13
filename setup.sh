@@ -7,7 +7,7 @@
 #
 # Flags: --name  --language (auto, en, pl, de, …)  --hotkey (fn, right-option, right-command,
 #        right-control, left-control)  --model (base, small, medium, large-v3-turbo)  --yes  --no-launch
-#
+#        --test-hooks / --no-test-hooks (developer test URLs; they need the testToken in config.json)
 set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -21,6 +21,7 @@ while [ $# -gt 0 ]; do
     --yes|-y) YES=1; shift ;;
     --no-launch) LAUNCH=0; shift ;;
     --test-hooks) TESTHOOKS=true; shift ;;
+    --no-test-hooks) TESTHOOKS=false; shift ;;
     -h|--help) sed -n 2,10p "$0"; exit 0 ;;
     *) echo "setup: unknown option $1" >&2; exit 2 ;;
   esac
@@ -65,6 +66,12 @@ if [ -z "$MODEL" ]; then
   case "$OLD_MODEL" in ggml-base.bin) MODEL=base ;; ggml-medium.bin) MODEL=medium ;; ggml-large-v3-turbo.bin) MODEL=large-v3-turbo ;; *) MODEL=small ;; esac
 fi
 if [ -z "$TESTHOOKS" ]; then TESTHOOKS="$(cfg_get testHooks || true)"; case "$TESTHOOKS" in True|true) TESTHOOKS=true ;; *) TESTHOOKS=false ;; esac; fi
+# test URLs carry this token, so a web page that opens an <app>:// link cannot use them
+TESTTOKEN=""
+if [ "$TESTHOOKS" = true ]; then
+  TESTTOKEN="$(cfg_get testToken || true)"
+  case "$TESTTOKEN" in *[!0-9a-f]*|"") TESTTOKEN="$(openssl rand -hex 16)" ;; esac
+fi
 
 case "$MODEL" in
   base) MODEL_FILE=ggml-base.bin;  MODEL_SIZE="about 140 MB" ;;
@@ -128,7 +135,8 @@ cat > "$SUPPORT/config.json" <<JSON
   "hotkey": "$HOTKEY",
   "aiPolish": "$AIPOLISH",
   "model": "$MODEL_FILE",
-  "testHooks": $TESTHOOKS
+  "testHooks": $TESTHOOKS,
+  "testToken": "$TESTTOKEN"
 }
 JSON
 cat "$SUPPORT/config.json"

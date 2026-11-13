@@ -20,6 +20,9 @@ struct AppConfig {
     var aiPolish = "auto"
     /// Test URLs (<app>://selftest, dictate-file, …). Off, so a web page cannot trigger them.
     var testHooks = false
+    /// Even with testHooks on, a test URL must carry &token=<this>. A web page can open <app>:// links but
+    /// cannot read this file, so it cannot record the mic or paste a file's transcript. setup.sh makes it.
+    var testToken = ""
     /// Whisper model file in ~/.<slug>/models/.
     var model = "ggml-small.bin"
 
@@ -46,6 +49,7 @@ struct AppConfig {
         if let v = obj["hotkey"] as? String, Hotkey.all[v.lowercased()] != nil { c.hotkey = v.lowercased() }
         if let v = obj["aiPolish"] as? String, ["auto", "on", "off"].contains(v.lowercased()) { c.aiPolish = v.lowercased() }
         if let v = obj["testHooks"] as? Bool { c.testHooks = v }
+        if let v = obj["testToken"] as? String { c.testToken = v }
         if let v = obj["model"] as? String, !v.isEmpty, !v.contains("/") { c.model = v }
         return c
     }

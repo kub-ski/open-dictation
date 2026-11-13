@@ -213,11 +213,15 @@ final class AppState: ObservableObject {
 }
 
 extension AppState {
-    /// <app>://selftest?seconds=4&mic=<name part> — records from the picker's choice (or a forced starting mic),
-    /// transcribes, and LOGS the result; nothing is typed anywhere. Used to verify mic selection and the watchdog.
+    /// <app>://selftest?seconds=4&mic=<name part>&token=<testToken> — records from the picker's choice (or a forced
+    /// starting mic), transcribes, and LOGS the result; nothing is typed anywhere. Used to verify mic selection and the watchdog.
+    /// Every test URL needs testHooks on AND the testToken from config.json: any web page can open an <app>:// link.
     func handle(_ url: URL) {
         let q = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
         guard AppConfig.current.testHooks else { Log.write("url: ignored (testHooks is off in config.json)"); return }
+        guard !AppConfig.current.testToken.isEmpty, q.first(where: { $0.name == "token" })?.value == AppConfig.current.testToken else {
+            Log.write("url: ignored (missing or wrong token; it is testToken in config.json)"); return
+        }
         if url.host == "polishtest" {
             // <app>://polishtest?text=<transcript>[&out=<candidate>] — runs the AI-polish pass on a given
             // transcript (or, with out=, only the reply check) and LOGS the result; nothing is typed anywhere.
@@ -249,7 +253,7 @@ extension AppState {
             return
         }
         guard url.host == "selftest" else { Log.write("url: ignored \(url.absoluteString)"); return }
-        let seconds = Double(q.first { $0.name == "seconds" }?.value ?? "") ?? 4
+        let seconds = min(max(Double(q.first { $0.name == "seconds" }?.value ?? "") ?? 4, 1), 60)   // a test, never an open mic
         let hint = q.first { $0.name == "mic" }?.value
         let tink = q.contains { $0.name == "tink" }   // mirror a real Fn press: cue sound right before the mic opens
         guard case .idle = phase else { Log.write("selftest: busy"); return }

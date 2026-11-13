@@ -42,9 +42,17 @@ cp "$REPO"/prompts/*.md "$APP/Contents/Resources/prompts/"
 # the entitlement in OpenDictation.entitlements.
 ID="$NAME Self-Signed"
 SIGN=(--force --deep --options runtime --entitlements "$REPO/OpenDictation.entitlements")
-if codesign "${SIGN[@]}" --sign "$ID" "$APP" 2>/dev/null; then
+# The signing keychain stays locked except for this moment. Its password sits in your login keychain and
+# macOS asks you before handing it out (click Allow, not Always Allow), so no other program can sign as this app.
+KC="$HOME/Library/Keychains/$SLUG-signing.keychain-db"
+KCPASS=""
+[ -f "$KC" ] && KCPASS="$(security find-generic-password -a "$SLUG" -s "$SLUG-signing-keychain" -w 2>/dev/null || true)"
+if [ -n "$KCPASS" ] && security unlock-keychain -p "$KCPASS" "$KC" 2>/dev/null \
+   && codesign "${SIGN[@]}" --sign "$ID" "$APP" 2>/dev/null; then
+  security lock-keychain "$KC"
   echo "build: signed with \"$ID\""
 else
+  [ -f "$KC" ] && { security lock-keychain "$KC" 2>/dev/null || true; }
   codesign "${SIGN[@]}" --sign - "$APP"
   echo "build: signed ad-hoc (no \"$ID\" identity found; permissions will reset on each rebuild)"
 fi

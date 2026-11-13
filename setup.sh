@@ -66,13 +66,16 @@ if [ -z "$MODEL" ]; then
 fi
 if [ -z "$TESTHOOKS" ]; then TESTHOOKS="$(cfg_get testHooks || true)"; case "$TESTHOOKS" in True|true) TESTHOOKS=true ;; *) TESTHOOKS=false ;; esac; fi
 
+# SHA-256 from the Git LFS pointers of the pinned revision below, so a swapped or broken file is caught
+# before whisper.cpp parses it.
 case "$MODEL" in
-  base) MODEL_FILE=ggml-base.bin;  MODEL_SIZE="about 140 MB" ;;
-  small) MODEL_FILE=ggml-small.bin; MODEL_SIZE="about 470 MB" ;;
-  medium) MODEL_FILE=ggml-medium.bin; MODEL_SIZE="about 1.5 GB" ;;
-  large-v3-turbo) MODEL_FILE=ggml-large-v3-turbo.bin; MODEL_SIZE="about 1.6 GB" ;;
+  base) MODEL_FILE=ggml-base.bin;  MODEL_SIZE="about 140 MB"; MODEL_SHA=60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe ;;
+  small) MODEL_FILE=ggml-small.bin; MODEL_SIZE="about 470 MB"; MODEL_SHA=1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b ;;
+  medium) MODEL_FILE=ggml-medium.bin; MODEL_SIZE="about 1.5 GB"; MODEL_SHA=6c14d5adee5f86394037b4e4e8b59f1673b6cee10e3cf0b11bbdbee79c156208 ;;
+  large-v3-turbo) MODEL_FILE=ggml-large-v3-turbo.bin; MODEL_SIZE="about 1.6 GB"; MODEL_SHA=1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69 ;;
   *) die "model must be base, small, medium or large-v3-turbo." ;;
 esac
+MODEL_REV=5359861c739e955e79d9a303bcbc70fb988958b1   # huggingface.co/ggerganov/whisper.cpp, not "main", which can change
 SUPPORT="$HOME/.$SLUG"
 echo "App: $NAME   Language: $LANGUAGE   Hotkey: $HOTKEY   Model: $MODEL ($MODEL_SIZE)"
 
@@ -111,10 +114,13 @@ echo "ok"
 say "Speech model ($MODEL_FILE, $MODEL_SIZE)"
 mkdir -p "$SUPPORT/models"
 DEST="$SUPPORT/models/$MODEL_FILE"
-if [ -s "$DEST" ] && [ "$(stat -f%z "$DEST")" -gt 100000000 ]; then
+sha_ok() { [ "$(shasum -a 256 "$1" | cut -d' ' -f1)" = "$MODEL_SHA" ]; }
+if [ -s "$DEST" ] && sha_ok "$DEST"; then
   echo "already downloaded: $DEST"
 else
-  curl -L --fail --retry 3 -C - -o "$DEST.part" "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/$MODEL_FILE"
+  [ -s "$DEST" ] && { echo "the model on disk does not match its checksum; downloading it again"; rm -f "$DEST"; }
+  curl -L --fail --retry 3 -C - -o "$DEST.part" "https://huggingface.co/ggerganov/whisper.cpp/resolve/$MODEL_REV/$MODEL_FILE"
+  sha_ok "$DEST.part" || { rm -f "$DEST.part"; die "the downloaded model did not match its checksum, so it was deleted. Run ./setup.sh again."; }
   mv "$DEST.part" "$DEST"
 fi
 

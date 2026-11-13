@@ -32,8 +32,14 @@ struct AppConfig {
         return s.isEmpty ? "opendictation" : s
     }()
 
-    static let supportDir = FileManager.default.homeDirectoryForCurrentUser
-        .appendingPathComponent(".\(slug)", isDirectory: true)
+    /// History, logs and leftover audio live here. Home folders on macOS are readable by every account on the Mac,
+    /// so this folder is made private to the user (0700), also when an older version created it open.
+    static let supportDir: URL = {
+        let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".\(slug)", isDirectory: true)
+        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: url.path)
+        return url
+    }()
 
     static let fileURL = supportDir.appendingPathComponent("config.json")
 

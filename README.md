@@ -20,7 +20,7 @@ Already use Claude Code (or a similar coding agent)? Paste the prompt from [PROM
 - macOS 14.2 (Sonoma) or newer
 - About 1 GB of free space
 - Homebrew. If you do not have it, setup will say so: paste the one-line command from [brew.sh](https://brew.sh) into Terminal (it asks for your Mac password), then run `./setup.sh` again.
-- Optional: the [`claude` CLI](https://docs.claude.com/en/docs/claude-code) signed in. If you have it, the app can also polish your text. If you don't, everything still works.
+- Optional: the [`claude` CLI](https://docs.claude.com/en/docs/claude-code) signed in. If you have it, the app can also polish your text. It is off until you switch it on. If you don't have it, everything still works.
 
 ## Install in 5 steps
 
@@ -79,7 +79,7 @@ Your settings live in `~/.<yourname>/config.json`. Edit it, then quit and reopen
 | `language` | `auto`, or a Whisper code: `en`, `pl`, `de`, `es`, `fr`… | `auto` |
 | `pack` | `en` or `pl`: cleanup rules for filler words and spoken commands | `en` |
 | `hotkey` | `fn`, `right-option`, `right-command`, `right-control`, `left-control` | `fn` |
-| `aiPolish` | `auto` (use `claude` if it is signed in), `on`, `off` | `auto` |
+| `aiPolish` | `auto` (a checkbox in the menu, off until you tick it, until you quit), `on` (always use `claude` when it is signed in), `off` (never) | `auto` |
 | `model` | the model file in `~/.<yourname>/models/` | `ggml-small.bin` |
 
 **Better accuracy:** `./setup.sh --model medium` (about 1.5 GB) or `--model large-v3-turbo` (about 1.6 GB, best, needs a faster Mac).
@@ -92,7 +92,7 @@ Your settings live in `~/.<yourname>/config.json`. Edit it, then quit and reopen
 2. The microphone records. If a mic gives only silence (some headsets do), the app switches to the next mic by itself.
 3. `ffmpeg` converts the audio. `whisper.cpp` turns it into text, on your Mac.
 4. A fast local cleanup removes "um" and "uh", fixes spaces and capital letters, and applies spoken commands.
-5. Optional: your own `claude` CLI polishes the text. If it is missing, signed out, or answers with something that is not a cleanup, the local text is used.
+5. Optional, off unless you switch it on: your own `claude` CLI polishes the text. If it is missing, signed out, or answers with something that is not a cleanup, the local text is used.
 6. The text is pasted with ⌘V. Your old clipboard is put back.
 
 ## Troubleshooting
@@ -131,7 +131,7 @@ It runs the cleanup rules and the settings reader, prints PASS or FAIL for each,
 
 ## Privacy
 
-Audio and text stay on your Mac. The only network use is the one-time model download and Homebrew. If you turn on AI polish, the text of each dictation goes to Claude through your own `claude` login, the same as any message you send there.
+Audio and text stay on your Mac. The only network use is the one-time model download and Homebrew. AI polish is off until you turn it on (the menu checkbox, or `"aiPolish": "on"`). When it is on, the text of each dictation goes to Claude through your own `claude` login, the same as any message you send there.
 
 ## License and credit
 

@@ -13,6 +13,7 @@ if [ -f "$KC" ]; then
   security delete-keychain "$KC" 2>/dev/null || true
   echo "removed signing keychain"
 fi
+security delete-generic-password -a "$SLUG" -s "$SLUG-signing-keychain" >/dev/null 2>&1 && echo "removed its password from your login keychain" || true
 if [ -d "$HOME/.$SLUG" ]; then
   read -r -p "Also delete ~/.$SLUG (settings, history, the speech model)? [y/N] " a || a=n
   [ "$a" = y ] || [ "$a" = Y ] && { rm -rf "$HOME/.$SLUG"; echo "removed ~/.$SLUG"; } || echo "kept ~/.$SLUG"

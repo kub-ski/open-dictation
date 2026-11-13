@@ -103,6 +103,9 @@ Check Input Monitoring and Accessibility (both on). If your key is Fn, check the
 **It asks for permissions again after I rebuilt it.**
 macOS ties permissions to how the app is signed. `setup.sh` makes a signing identity called "<Name> Self-Signed" so permissions survive rebuilds. If you ever see "signed ad-hoc" in the build output, run `./setup.sh` again. To reset: remove the app from both Privacy lists with the **−** button, open it again, and allow again.
 
+**macOS asks for my password while it builds.**
+That is the signing key being used. It is locked so no other program can sign itself as your app and take its permissions. Type your Mac password and click **Allow** (not Always Allow). It asks once per build.
+
 **"No sound from … — using …" appears, or nothing was recorded.**
 The app tried a mic that was silent and moved to the next one. That is the safety net working. Bluetooth headsets that are busy with another device are the usual cause. The built-in mic is skipped when a laptop lid is closed, because macOS feeds it silence then. Pick a working mic in System Settings › Sound › Input.
 

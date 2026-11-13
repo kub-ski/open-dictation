@@ -134,15 +134,30 @@ JSON
 cat "$SUPPORT/config.json"
 
 # ---- 5. signing identity (keeps your permissions across rebuilds) ---------------------------
-# A small keychain of its own holds the key, so your login keychain is never touched and no
-# password prompt appears. The key only signs this app on this Mac.
+# A small keychain of its own holds the key. The key only signs this app on this Mac. The keychain has a
+# random password, kept in your login keychain, and stays locked except while build.sh signs, so no other
+# program can sign code as this app and take over its Microphone / Accessibility / Input Monitoring
+# permissions. macOS asks you once per build before handing the password out: click Allow, not Always Allow.
 say "Signing identity"
 ID="$NAME Self-Signed"
 KC="$HOME/Library/Keychains/$SLUG-signing.keychain-db"
-if [ -f "$KC" ]; then
-  security unlock-keychain -p "" "$KC" 2>/dev/null || true
+KCSVC="$SLUG-signing-keychain"
+kc_has_pass() { security find-generic-password -a "$SLUG" -s "$KCSVC" >/dev/null 2>&1; }
+kc_store() { security add-generic-password -U -a "$SLUG" -s "$KCSVC" -w "$1" -T "" >/dev/null; }   # -T "": every read asks you
+KCPASS=""
+if [ -f "$KC" ] && ! kc_has_pass; then
+  if security unlock-keychain -p "" "$KC" 2>/dev/null; then
+    # an older setup made it with an empty password: give it a real one (same identity, so your permissions stay)
+    KCPASS="$(openssl rand -hex 24)"
+    kc_store "$KCPASS"
+    security set-keychain-password -o "" -p "$KCPASS" "$KC"
+    echo "gave the signing keychain its own password"
+  else
+    die "$KC has a password setup does not know. Run ./uninstall.sh \"$NAME\", then ./setup.sh again."
+  fi
 fi
-if [ -f "$KC" ] && security find-identity -p codesigning "$KC" 2>/dev/null | grep -q "\"$ID\""; then
+# a keychain this setup just unlocked is checked for the identity; a locked one is trusted (checking it would ask you)
+if [ -f "$KC" ] && kc_has_pass && { [ -z "$KCPASS" ] || security find-identity -p codesigning "$KC" 2>/dev/null | grep -q "\"$ID\""; }; then
   echo "already there: $ID"
 else
   TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
@@ -162,13 +177,18 @@ CNF
   /usr/bin/openssl req -x509 -newkey rsa:2048 -nodes -days 3650 -config "$TMP/openssl.cnf" \
       -keyout "$TMP/key.pem" -out "$TMP/cert.pem" >/dev/null 2>&1
   /usr/bin/openssl pkcs12 -export -inkey "$TMP/key.pem" -in "$TMP/cert.pem" -out "$TMP/id.p12" -passout "pass:$PASS" >/dev/null 2>&1
-  [ -f "$KC" ] || security create-keychain -p "" "$KC"
-  security set-keychain-settings "$KC"            # never auto-lock
-  security unlock-keychain -p "" "$KC"
+  if [ ! -f "$KC" ]; then
+    KCPASS="$(openssl rand -hex 24)"
+    kc_store "$KCPASS"
+    security create-keychain -p "$KCPASS" "$KC"
+  fi
+  security unlock-keychain -p "$KCPASS" "$KC"
   security import "$TMP/id.p12" -k "$KC" -P "$PASS" -T /usr/bin/codesign >/dev/null
-  security set-key-partition-list -S apple-tool:,apple: -s -k "" "$KC" >/dev/null 2>&1 || true
+  security set-key-partition-list -S apple-tool:,apple: -s -k "$KCPASS" "$KC" >/dev/null 2>&1 || true
   echo "created: $ID (in its own keychain: $KC)"
 fi
+security set-keychain-settings -l -u -t 300 "$KC"   # if it is ever left unlocked, it locks after 5 minutes and on sleep
+security lock-keychain "$KC"
 # codesign finds identities through the keychain search list: make sure ours is on it
 if ! security list-keychains -d user | grep -q "$SLUG-signing"; then
   CUR=(); while IFS= read -r l; do l="${l#*\"}"; l="${l%\"*}"; [ -n "$l" ] && CUR+=("$l"); done < <(security list-keychains -d user)

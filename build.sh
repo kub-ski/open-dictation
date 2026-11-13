@@ -37,11 +37,23 @@ cp "$REPO"/prompts/*.md "$APP/Contents/Resources/prompts/"
 
 # A stable signing identity keeps your Microphone / Accessibility permissions across rebuilds.
 # setup.sh creates "<Name> Self-Signed"; without it we sign ad-hoc and macOS asks again after every rebuild.
+# The hardened runtime stops other programs from loading their code into the app (DYLD_INSERT_LIBRARIES)
+# and borrowing its Microphone / Accessibility / Input Monitoring permissions. The microphone then needs
+# the entitlement in OpenDictation.entitlements.
 ID="$NAME Self-Signed"
-if codesign --force --deep --sign "$ID" "$APP" 2>/dev/null; then
+SIGN=(--force --deep --options runtime --entitlements "$REPO/OpenDictation.entitlements")
+# The signing keychain stays locked except for this moment. Its password sits in your login keychain and
+# macOS asks you before handing it out (click Allow, not Always Allow), so no other program can sign as this app.
+KC="$HOME/Library/Keychains/$SLUG-signing.keychain-db"
+KCPASS=""
+[ -f "$KC" ] && KCPASS="$(security find-generic-password -a "$SLUG" -s "$SLUG-signing-keychain" -w 2>/dev/null || true)"
+if [ -n "$KCPASS" ] && security unlock-keychain -p "$KCPASS" "$KC" 2>/dev/null \
+   && codesign "${SIGN[@]}" --sign "$ID" "$APP" 2>/dev/null; then
+  security lock-keychain "$KC"
   echo "build: signed with \"$ID\""
 else
-  codesign --force --deep --sign - "$APP"
+  [ -f "$KC" ] && { security lock-keychain "$KC" 2>/dev/null || true; }
+  codesign "${SIGN[@]}" --sign - "$APP"
   echo "build: signed ad-hoc (no \"$ID\" identity found; permissions will reset on each rebuild)"
 fi
 echo "build: done → $APP"

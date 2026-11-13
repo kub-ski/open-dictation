@@ -4,6 +4,8 @@ set -euo pipefail
 NAME="${1:?usage: ./uninstall.sh \"<App Name>\"}"
 case "$NAME" in *[!A-Za-z0-9\ -]*|"") echo "uninstall: bad name" >&2; exit 2 ;; esac
 SLUG="$(printf '%s' "$NAME" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9')"
+# a name like "---" passes the check above but has no slug, and ~/.$SLUG would then be ~/. itself
+[ -n "$SLUG" ] || { echo "uninstall: the name needs at least one letter or number" >&2; exit 2; }
 KC="$HOME/Library/Keychains/$SLUG-signing.keychain-db"
 pkill -f "$HOME/Applications/$NAME.app/Contents/MacOS/" 2>/dev/null || true
 if [ -d "$HOME/Applications/$NAME.app" ]; then rm -rf "$HOME/Applications/$NAME.app"; echo "removed ~/Applications/$NAME.app"; fi

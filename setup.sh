@@ -120,7 +120,8 @@ fi
 
 # ---- 4. config -----------------------------------------------------------------------------
 say "Saving settings to $SUPPORT/config.json"
-AIPOLISH=auto; OLD_AI="$(cfg_get aiPolish || true)"; [ -n "$OLD_AI" ] && AIPOLISH="$OLD_AI"
+AIPOLISH=auto; OLD_AI="$(cfg_get aiPolish || true)"
+case "$OLD_AI" in auto|on|off) AIPOLISH="$OLD_AI" ;; esac   # anything else would be written into the JSON as-is
 cat > "$SUPPORT/config.json" <<JSON
 {
   "language": "$LANGUAGE",

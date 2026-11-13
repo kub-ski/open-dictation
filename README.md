@@ -69,6 +69,7 @@ System Settings › Keyboard › **Press 🌐 key to** › **Do Nothing**. Witho
 - **Tap twice** to lock the recording on (for long talking). **Tap once** to stop.
 - Say **"new line"**, **"new paragraph"**, **"comma"**, **"question mark"** and the app types the mark instead of the words.
 - Click the menu-bar icon to see your last dictations, copy one, or open the full history.
+- If you switch to another app before the text is ready, it is not pasted there. It waits in the menu for you to copy.
 
 ## Settings
 

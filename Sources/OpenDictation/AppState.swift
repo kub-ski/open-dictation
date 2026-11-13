@@ -29,6 +29,7 @@ final class AppState: ObservableObject {
     private let hud = HUD()
     private var recordingStartedAt: Date?
     private var targetApp: String = "?"
+    private var targetPID: pid_t = 0
 
     var menuIcon: String {
         switch phase {
@@ -143,6 +144,7 @@ final class AppState: ObservableObject {
         }
         // Remember where the text should land BEFORE anything shifts focus.
         targetApp = NSWorkspace.shared.frontmostApplication?.localizedName ?? "?"
+        targetPID = NSWorkspace.shared.frontmostApplication?.processIdentifier ?? 0
         // Show the HUD + play the cue IMMEDIATELY so it feels instant — the AVAudioEngine
         // start below has ~150-250 ms of latency we don't want the user waiting on.
         phase = .recording(locked: false)
@@ -188,6 +190,7 @@ final class AppState: ObservableObject {
         Log.write("record: stopped (\(String(format: "%.1f", seconds))s) → pipeline")
         let cleanup = cleanupEnabled
         let app = targetApp
+        let pid = targetPID
         Task.detached { [weak self] in
             do {
                 let result = try await Pipeline.transcribe(audioURL: audioURL, cleanup: cleanup)
@@ -196,6 +199,16 @@ final class AppState: ObservableObject {
                     if result.cleaned.isEmpty {
                         Log.write("pipeline: empty result — nothing inserted")
                         self.phase = .idle
+                        return
+                    }
+                    // Paste only where the dictation began. Transcribing (and AI polish) takes seconds; text meant
+                    // for one chat must not land in whatever the user switched to meanwhile, least of all a Terminal.
+                    if NSWorkspace.shared.frontmostApplication?.processIdentifier != pid {
+                        let now = NSWorkspace.shared.frontmostApplication?.localizedName ?? "?"
+                        self.history.add(raw: result.raw, cleaned: result.cleaned, seconds: seconds, app: app)
+                        Log.write("insert: skipped — started in \(app), \(now) is in front now; kept in history")
+                        Sounds.play("Basso")
+                        self.phase = .error("you switched apps — copy it from the menu")
                         return
                     }
                     TextInserter.insert(result.cleaned)

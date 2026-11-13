@@ -37,11 +37,15 @@ cp "$REPO"/prompts/*.md "$APP/Contents/Resources/prompts/"
 
 # A stable signing identity keeps your Microphone / Accessibility permissions across rebuilds.
 # setup.sh creates "<Name> Self-Signed"; without it we sign ad-hoc and macOS asks again after every rebuild.
+# The hardened runtime stops other programs from loading their code into the app (DYLD_INSERT_LIBRARIES)
+# and borrowing its Microphone / Accessibility / Input Monitoring permissions. The microphone then needs
+# the entitlement in OpenDictation.entitlements.
 ID="$NAME Self-Signed"
-if codesign --force --deep --sign "$ID" "$APP" 2>/dev/null; then
+SIGN=(--force --deep --options runtime --entitlements "$REPO/OpenDictation.entitlements")
+if codesign "${SIGN[@]}" --sign "$ID" "$APP" 2>/dev/null; then
   echo "build: signed with \"$ID\""
 else
-  codesign --force --deep --sign - "$APP"
+  codesign "${SIGN[@]}" --sign - "$APP"
   echo "build: signed ad-hoc (no \"$ID\" identity found; permissions will reset on each rebuild)"
 fi
 echo "build: done → $APP"

@@ -6,6 +6,8 @@
 set -euo pipefail
 
 NAME="${1:-OpenDictation}"
+# same rule as setup.sh: the name goes into sed, the Info.plist and file paths
+case "$NAME" in *[!A-Za-z0-9\ -]*|"") echo "build: the name can only use letters, numbers, spaces and dashes" >&2; exit 2 ;; esac
 SLUG="$(printf '%s' "$NAME" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9')"
 [ -n "$SLUG" ] || { echo "build: the name needs at least one letter or number" >&2; exit 1; }
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
